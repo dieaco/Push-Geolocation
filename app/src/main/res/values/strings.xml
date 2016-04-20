@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_name">Push</string>
+    <string name="gcm_send_message">Token retrieved and sent to server! You can now use gcmsender to
+        send downstream messages to this app.</string>
+    <string name="registering_message">Generating InstanceID token...</string>
+    <string name="token_error_message">An error occurred while either fetching the InstanceID token,
+        sending the fetched token to the server or subscribing to the PubSub topic. Please try
+        running the sample again.</string>
+    <string name="gcm_ready">Su dispositivo ha sido registrado para recibir notificaciones. ¡Ya puede iniciar sesión!</string>
+    <string name="gcm_not_ready">Ocurrió algún error en el registro de su dispositivo para la recepción de Notiticaciones. Por favor, reinicie la aplicación</string>
+
+    <!-- ACTIVITIES NAMES -->
+    <string name="mainActivity">Escucha a tú líder</string>
+    <string name="notificationsList">Mensajes</string>
+    <string name="signinActivity">Inicio de sesión</string>
+
+    <!-- LOGIN STRINGS -->
+    <string name="username">Usuario</string>
+    <string name="password">Password</string>
+    <string name="remember">Desea mantener su sesión abierta</string>
+    <string name="createPass">Crear contraseña</string>
+    <string name="iniciarSes">Iniciar Sesión</string>
+    <string name="seleccionarCuenta">Cuentas</string>
+
+    <!-- PASSWORD STRINGS -->
+    <string name="newPassword">Digita tu contraseña:</string>
+    <string name="confirmNewPassword">Confirma tu contraseña:</string>
+    <string name="savePassword">Registrar</string>
+    <string name="emptyUser">Debe seleccionar una cuenta</string>
+    <string name="emptyPassword">Campo Obligatorio</string>
+    <string name="wrongPassword">El password debe contener un máximo de 8 caracteres, al menos un dígito, una mayúscula y una minúscula</string>
+    <string name="equalPassword">La confirmación de passbword es errónea</string>
+    <string name="repeatedAccount">Ya existe un usuario con ésta cuenta. Sí desea recuperar su contraseña presione el botón que se encuentra en la parte inferior derecha</string>
+    <string name="wrongValidation">Su Password es erroneo</string>
+    <string name="registerUser">Registrar</string>
+    <string name="goToSignIn">Si ya cuenta con una contraseña asociada a ésta cuenta vaya al inicio de sesión, en caso de haberla olvidado presione el botón que se encuentra en la parte inferior derecha para recuperar vía email.</string>
+
+    <!-- NOTIFICATIONS STRINGS -->
+    <string name="hearLeader">Escucha a tu líder</string>
+    <string name="menuItemLogout">Cerrar Sesión</string>
+    <string name="refresh">Actualizar Listado</string>
+    <string name="title_activity_main2">Main2Activity</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <!--MENUS STRINGS-->
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_maps">Map</string>
+</resources>
