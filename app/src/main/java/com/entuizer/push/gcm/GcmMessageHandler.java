@@ -1,22 +1,16 @@
 package com.entuizer.push.gcm;
 
-import android.Manifest;
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
@@ -31,10 +25,7 @@ import com.entuizer.push.MainActivity;
 import com.entuizer.push.R;
 import com.entuizer.push.data.UserData;
 import com.entuizer.push.services.GPSTracker;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.location.LocationServices;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -191,6 +182,8 @@ public class GcmMessageHandler extends IntentService {
 
         //SEND DATA TO SERVER ABOUT DE USER LOCATION
         storeUserLocationWhenReceiveMessage(extras.getString("messageId"), latitude, longitude);
+
+        gps.stopUsingGPS();
 
         //Para indicar que una vez sea posible apague el servicio
         GcmBroadcastReceiver.completeWakefulIntent(intent);
