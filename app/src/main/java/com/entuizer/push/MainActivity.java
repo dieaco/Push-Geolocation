@@ -4,15 +4,20 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -20,7 +25,11 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.entuizer.push.adapters.CardMessageAdapter;
+import com.entuizer.push.cache.AppData;
 import com.entuizer.push.data.UserData;
+import com.entuizer.push.images.GetMessageBitmap;
+import com.entuizer.push.listeners.EndlessRecyclerOnScrollListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -33,6 +42,19 @@ public class MainActivity extends AppCompatActivity {
 
     private ProgressDialog progressDialog;
 
+    private RecyclerView recyclerView;
+    private LinearLayoutManager layoutManager;
+    private RecyclerView.Adapter adapter;
+
+    private AppData config;
+
+    private int cacheLength = 10;
+    private int offset = 0;
+    private int current_page = 1;
+
+    /*private boolean loading = true;
+    private int pastVisiblesItems, visibleItemCount, totalItemCount;*/
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,20 +63,156 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
-
         initViews();
     }
 
     public void initViews(){
         progressDialog = new ProgressDialog(this);
+
+        recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
+        recyclerView.setHasFixedSize(true);
+
+        layoutManager = new LinearLayoutManager(this);
+
+        recyclerView.setLayoutManager(layoutManager);
+
+        recyclerView.setOnScrollListener(new EndlessRecyclerOnScrollListener(layoutManager) {
+
+            @Override
+            public void onLoadMore(int current_page, int visibleItemCount, int totalItemCount, int firstVisibleItem, int visibleThreshold) {
+                Log.i("SCROLL", "LLEGO AL FIN: " + current_page);
+                Log.d("VALUES SCROLL", "VisibleItemCount: " + visibleItemCount + " - TotalItemCount: " + totalItemCount + " - FirstVisibleItem: " + firstVisibleItem + " - VisibleThreshold: " + visibleThreshold);
+                //getMoreData();
+            }
+        });
+
+        getData();
+    }
+
+    private void getData(){
+        progressDialog.setTitle("Cargando datos");
+        progressDialog.setMessage("Espere un momento...");
+        progressDialog.show();
+        RequestQueue queue = Volley.newRequestQueue(this);
+        StringRequest putRequest = new StringRequest(Request.Method.POST, AppData.GET_URL,
+                new Response.Listener<String>()
+                {
+
+                    public void onResponse(String response) {
+                        // response
+                        progressDialog.dismiss();
+                        parseJSON(response);
+                    }
+                },
+                new Response.ErrorListener()
+                {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // error
+                        progressDialog.dismiss();
+                        Log.d("Error.Response", error.toString());
+                    }
+                }
+        ) {
+
+            @Override
+            protected Map<String, String> getParams()
+            {
+                //User ID almacenado localmente
+                int userId = UserData.getUserId(MainActivity.this);Log.d("USERIDPARAMS", "" + userId);
+
+                Map<String, String>  params = new HashMap<String, String>();
+
+                params.put("userId", ""+userId);
+                params.put("limit", "10");
+                params.put("offset", ""+offset);
+
+                return params;
+            }
+
+        };
+
+        queue.add(putRequest);
+    }
+
+    public void showData(){
+        adapter = new CardMessageAdapter(AppData.id, AppData.mensaje, AppData.timestamp, AppData.isRead, AppData.userId, AppData.pictureBitmap);
+        recyclerView.setAdapter(adapter);
+    }
+
+    private void parseJSON(String json){Log.d("RESPONSE_JSON",json);
+        try {
+            JSONObject jsonObject = new JSONObject(json);
+            JSONArray array = jsonObject.getJSONArray(AppData.TAG_JSON_ARRAY);
+
+            config = new AppData(cacheLength);
+
+            for(int i=offset; i<cacheLength; i++){Log.i("APPDATA LENGTH", ""+AppData.id.length);
+                JSONObject j = array.getJSONObject(i);
+                AppData.id[i] = j.getString(AppData.TAG_MESSAGE_ID);
+                AppData.mensaje[i] = j.getString(AppData.TAG_MESSAGE);
+                AppData.timestamp[i] = j.getString(AppData.TAG_MESSAGE_TIMESTAMP);
+                AppData.isRead[i] = j.getInt(AppData.TAG_MESSAGE_IS_READ);
+                AppData.userId[i] = j.getInt(AppData.TAG_MESSAGE_USER_ID);
+                AppData.picture[i] = j.getString(AppData.TAG_MESSAGE_PICTURE);
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        GetMessageBitmap gb = new GetMessageBitmap(this,this, AppData.picture);
+        gb.execute();
+
+        cacheLength = cacheLength + 10;
+        offset = offset + 10;
+        Log.i("VALOR DE ARRAY",AppData.mensaje[0]);
+    }
+
+    public void getMoreData(){
+        progressDialog.setTitle("Cargando datos");
+        progressDialog.setMessage("Espere un momento...");
+        progressDialog.show();
+        RequestQueue queue = Volley.newRequestQueue(this);
+        StringRequest putRequest = new StringRequest(Request.Method.POST, AppData.GET_URL,
+                new Response.Listener<String>()
+                {
+
+                    public void onResponse(String response) {
+                        // response
+                        progressDialog.dismiss();
+                        parseJSON(response);
+                    }
+                },
+                new Response.ErrorListener()
+                {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // error
+                        progressDialog.dismiss();
+                        Log.d("Error.Response", error.toString());
+                    }
+                }
+        ) {
+
+            @Override
+            protected Map<String, String> getParams()
+            {
+                //User ID almacenado localmente
+                int userId = UserData.getUserId(MainActivity.this);Log.d("USERIDPARAMS", "" + userId);
+
+                Map<String, String>  params = new HashMap<String, String>();
+
+                params.put("userId", ""+userId);
+                params.put("limit", "10");
+                params.put("offset", ""+offset);
+
+                return params;
+            }
+
+        };
+
+        queue.add(putRequest);
     }
 
     @Override
