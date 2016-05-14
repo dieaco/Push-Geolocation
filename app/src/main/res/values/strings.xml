@@ -29,8 +29,8 @@
     <string name="savePassword">Registrar</string>
     <string name="emptyUser">Debe seleccionar una cuenta</string>
     <string name="emptyPassword">Campo Obligatorio</string>
-    <string name="wrongPassword">El password debe contener un máximo de 8 caracteres, al menos un dígito, una mayúscula y una minúscula</string>
-    <string name="equalPassword">La confirmación de passbword es errónea</string>
+    <string name="wrongPassword">El password debe contener un mínimo de 8 caracteres y un máximo de 16 caracteres, al menos un dígito, una mayúscula y una minúscula</string>
+    <string name="equalPassword">La confirmación de password es errónea</string>
     <string name="repeatedAccount">Ya existe un usuario con ésta cuenta. Sí desea recuperar su contraseña presione el botón que se encuentra en la parte inferior derecha</string>
     <string name="wrongValidation">Su Password es erroneo</string>
     <string name="registerUser">Registrar</string>

@@ -18,9 +18,19 @@
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
 
     </android.support.v7.widget.RecyclerView>
+
+    <TextView
+        android:id="@+id/txtLoadMoreData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Cargar siguientes 10 mensajes"
+        android:gravity="center"
+        android:visibility="gone"/>
 
 
 </LinearLayout>

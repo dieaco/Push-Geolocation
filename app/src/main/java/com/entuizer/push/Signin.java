@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +26,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.entuizer.push.data.UserData;
+import com.entuizer.push.services.LocationService;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.json.JSONArray;
@@ -50,6 +52,8 @@ public class Signin extends AppCompatActivity {
 
     private String userName = "";
 
+    private Handler handler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,6 +67,7 @@ public class Signin extends AppCompatActivity {
 
     //Inicialización de vistas
     public void initViews(){
+        handler = new Handler();
 
         etUsername = (EditText)findViewById(R.id.etUsername);
         etPassword = (EditText)findViewById(R.id.etPassword);
@@ -117,7 +122,7 @@ public class Signin extends AppCompatActivity {
                     progressDialog.dismiss();
 
                 } catch (IOException ex) {
-                    Toast.makeText(getApplicationContext(),"Ocurrió un error con el registro en GCM. Reinice la aplicación.",Toast.LENGTH_LONG).show();
+                    showToast();
                     msg = "Error :" + ex.getMessage();
                 }
                 return msg;
@@ -149,7 +154,7 @@ public class Signin extends AppCompatActivity {
             etPassword.requestFocus();
             etPassword.setError(getString(R.string.emptyPassword));
             return false;
-        }else if(!etPassword.getText().toString().matches("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8}$")){
+        }else if(!etPassword.getText().toString().matches("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,16}$")){
             progressDialog.dismiss();
             etPassword.requestFocus();
             etPassword.setError(getString(R.string.wrongPassword));
@@ -181,8 +186,10 @@ public class Signin extends AppCompatActivity {
 
                             //Validación de la respuesta JSON
                             if(ERROR == 0){
-                                if(cbRecordar.isChecked())
+                                if(cbRecordar.isChecked()) {
                                     UserData.setLogged(Signin.this, true);
+                                    startService(new Intent(Signin.this, LocationService.class));
+                                }
                                 Intent intent = new Intent(Signin.this, MainActivity.class);
                                 startActivity(intent);
                                 Signin.this.finish();
@@ -266,6 +273,19 @@ public class Signin extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void showToast(){
+        handler.post(new Runnable() {
+
+            @Override
+            public void run() {
+                // TODO Auto-generated method stub
+                Toast.makeText(getApplicationContext(), "Ocurrió un error con el registro en GCM. Procure estar conectado a una Red WIFI.", Toast.LENGTH_LONG).show();
+                //Signin.this.finish();
+            }
+
+        });
     }
 
 }

@@ -14,17 +14,19 @@ public class Message {
     private int isRead;
     private int userId;
     private Bitmap picture;
+    private String urlPicture;
 
     public Message() {
     }
 
-    public Message(String id, String mensaje, String timestamp, int isRead, int userId, Bitmap picture) {
+    public Message(String id, String mensaje, String timestamp, int isRead, int userId, Bitmap picture, String urlPicture) {
         this.id = id;
         this.mensaje = mensaje;
         this.timestamp = timestamp;
         this.isRead = isRead;
         this.userId = userId;
         this.picture = picture;
+        this.urlPicture = urlPicture;
     }
 
     public String getId() {
@@ -74,5 +76,9 @@ public class Message {
     public void setPicture(Bitmap picture) {
         this.picture = picture;
     }
+
+    public String getUrlPicture(){return this.urlPicture;}
+
+    public void setUrlPicture(String urlPicture){ this.urlPicture = urlPicture; }
 
 }

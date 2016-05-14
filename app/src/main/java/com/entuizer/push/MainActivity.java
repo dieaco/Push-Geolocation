@@ -17,6 +17,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -26,21 +28,28 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.entuizer.push.adapters.CardMessageAdapter;
+import com.entuizer.push.adapters.CardMessageAdapter2;
+import com.entuizer.push.cache.AppCache;
 import com.entuizer.push.cache.AppData;
 import com.entuizer.push.data.UserData;
 import com.entuizer.push.images.GetMessageBitmap;
 import com.entuizer.push.listeners.EndlessRecyclerOnScrollListener;
+import com.entuizer.push.models.Message;
+import com.entuizer.push.parsers.GetMessages;
+import com.entuizer.push.services.LocationService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ProgressDialog progressDialog;
+    public ProgressDialog progressDialog;
+    private TextView txtLoadMoreData;
 
     private RecyclerView recyclerView;
     private LinearLayoutManager layoutManager;
@@ -52,8 +61,8 @@ public class MainActivity extends AppCompatActivity {
     private int offset = 0;
     private int current_page = 1;
 
-    /*private boolean loading = true;
-    private int pastVisiblesItems, visibleItemCount, totalItemCount;*/
+    private boolean loading = true;
+    private int pastVisiblesItems, visibleItemCount, totalItemCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
     public void initViews(){
         progressDialog = new ProgressDialog(this);
 
+        txtLoadMoreData = (TextView)findViewById(R.id.txtLoadMoreData);
+
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         recyclerView.setHasFixedSize(true);
 
@@ -76,16 +87,39 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(layoutManager);
 
-        recyclerView.setOnScrollListener(new EndlessRecyclerOnScrollListener(layoutManager) {
-
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public void onLoadMore(int current_page, int visibleItemCount, int totalItemCount, int firstVisibleItem, int visibleThreshold) {
-                Log.i("SCROLL", "LLEGO AL FIN: " + current_page);
-                Log.d("VALUES SCROLL", "VisibleItemCount: " + visibleItemCount + " - TotalItemCount: " + totalItemCount + " - FirstVisibleItem: " + firstVisibleItem + " - VisibleThreshold: " + visibleThreshold);
-                //getMoreData();
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                Log.i("SCROLL", "Si se esta moviendo - dy= " + dy);
+                if (dy > 0) //check for scroll down
+                {
+                    Log.i("DY", "Se movio verticalmente");
+                    visibleItemCount = layoutManager.getChildCount();
+                    totalItemCount = layoutManager.getItemCount();
+                    pastVisiblesItems = layoutManager.findFirstVisibleItemPosition();
+
+                    if (loading) {
+                        Log.i("LOADING", "Cargando: " + loading);
+                        Log.i("VALORES_DE_SCROLL", "CuentaElementosVisibles: " + visibleItemCount + " - CuentaElementosTotales: " + totalItemCount + " - ElementosVisiblesPasados: " + pastVisiblesItems);
+                        if ((visibleItemCount + pastVisiblesItems) >= totalItemCount) {
+                            loading = false;
+                            Log.v("...", "Last Item Wow !");
+                            txtLoadMoreData.setVisibility(View.VISIBLE);
+                            txtLoadMoreData.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    getMoreData();
+                                }
+                            });
+                        }
+                    }
+                }if(dy < 0){
+                    txtLoadMoreData.setVisibility(View.GONE);
+                }
             }
         });
 
+        //Carga recyclerView con los datos del servidor
         getData();
     }
 
@@ -100,8 +134,17 @@ public class MainActivity extends AppCompatActivity {
 
                     public void onResponse(String response) {
                         // response
-                        progressDialog.dismiss();
-                        parseJSON(response);
+                        //progressDialog.dismiss();
+                        //parseJSON(response);
+                        try{
+                            JSONObject jsonObject = new JSONObject(response);
+                            GetMessages getMessages = new GetMessages(getApplicationContext(), MainActivity.this);
+                            getMessages.getMessages(jsonObject);
+
+
+                        }catch (JSONException e){
+                            e.printStackTrace();
+                        }
                     }
                 },
                 new Response.ErrorListener()
@@ -138,6 +181,11 @@ public class MainActivity extends AppCompatActivity {
     public void showData(){
         adapter = new CardMessageAdapter(AppData.id, AppData.mensaje, AppData.timestamp, AppData.isRead, AppData.userId, AppData.pictureBitmap);
         recyclerView.setAdapter(adapter);
+    }
+
+    public void showData(ArrayList<Message> list){
+        CardMessageAdapter2 adapter2 = new CardMessageAdapter2(getApplicationContext(), list);
+        recyclerView.setAdapter(adapter2);
     }
 
     private void parseJSON(String json){Log.d("RESPONSE_JSON",json);
@@ -180,8 +228,18 @@ public class MainActivity extends AppCompatActivity {
 
                     public void onResponse(String response) {
                         // response
-                        progressDialog.dismiss();
-                        parseJSON(response);
+                        // response
+                        //progressDialog.dismiss();
+                        //parseJSON(response);
+                        try{
+                            JSONObject jsonObject = new JSONObject(response);
+                            GetMessages getMessages = new GetMessages(getApplicationContext(), MainActivity.this);
+                            getMessages.getMessages(jsonObject);
+                            loading = true;
+                            txtLoadMoreData.setVisibility(View.GONE);
+                        }catch (JSONException e){
+                            e.printStackTrace();
+                        }
                     }
                 },
                 new Response.ErrorListener()
@@ -204,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
                 Map<String, String>  params = new HashMap<String, String>();
 
                 params.put("userId", ""+userId);
-                params.put("limit", "10");
+                params.put("limit", ""+(cacheLength+10));
                 params.put("offset", ""+offset);
 
                 return params;
@@ -293,6 +351,8 @@ public class MainActivity extends AppCompatActivity {
 
                             UserData.setLogged(MainActivity.this, false);
                             UserData.setRegId(MainActivity.this, "");
+                            UserData.setUpLocationService(MainActivity.this, false);
+                            stopService(new Intent(MainActivity.this, LocationService.class));
 
                             launchMainActivity();
 

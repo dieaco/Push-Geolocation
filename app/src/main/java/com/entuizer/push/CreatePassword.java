@@ -26,6 +26,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.entuizer.push.data.UserData;
+import com.entuizer.push.services.LocationService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -65,6 +66,12 @@ public class CreatePassword extends AppCompatActivity {
 
         //Valida si existen preferencias
         if(userIsLogged){
+            /*Log.d("CREATEPASSWORD", "SERVICIO: "+UserData.isLocationServiceRunning(getApplicationContext()));
+            if(UserData.isLocationServiceRunning(getApplicationContext()) == false){
+                Log.d("INICIAR SERVICIO", "Inicia servicio desde create password si está loggeado usuario");
+                startService(new Intent(CreatePassword.this, LocationService.class));
+            }*/
+            startService(new Intent(CreatePassword.this, LocationService.class));
             launchNotificationsListActivty();
         }else if(userName.equals("") && userId == 0){
             initViews();
@@ -355,7 +362,7 @@ public class CreatePassword extends AppCompatActivity {
             etNewPassword.requestFocus();
             etNewPassword.setError(getString(R.string.emptyPassword));
             return false;
-        }else if(!etNewPassword.getText().toString().matches("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8}$")){
+        }else if(!etNewPassword.getText().toString().matches("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,16}$")){
             etNewPassword.requestFocus();
             etNewPassword.setError(getString(R.string.wrongPassword));
             return false;

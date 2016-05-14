@@ -38,6 +38,7 @@ public class GcmMessageHandler extends IntentService {
     //Atributos para Notifications en barra de estado
     String message;
     String messageId;
+    String isGeolocation;
     String title;
     Uri alarmSound;
     private final int NOTIFICATION_ID = 12345;
@@ -135,53 +136,61 @@ public class GcmMessageHandler extends IntentService {
 
         String messageType =  gcm.getMessageType(intent);
 
-        messageId = extras.getString("messageId");
-        message = extras.getString("message");
-        title = "Notificación Entuizer";
-        alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
-        notificationIntent.putExtra("mensaje", message);
-        notificationIntent.putExtra("titulo", title);
-        notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
-        mNotificationManager = (NotificationManager)this
-                .getSystemService(Context.NOTIFICATION_SERVICE);
-        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
-                notificationIntent, PendingIntent.FLAG_ONE_SHOT);
-
-        Bitmap largeIcon = new BitmapFactory().decodeResource(getResources(), R.drawable.bullet_notifi);
-
-        NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(getApplicationContext())
-                        .setSmallIcon(R.drawable.bullet_notifi)
-                        .setLargeIcon(largeIcon)
-                        .setContentTitle(title)
-                        .setContentText(message)
-                        .setAutoCancel(true)
-                        .setSound(alarmSound)
-                        .setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000 })
-                        .setStyle(new NotificationCompat.BigTextStyle()
-                                .bigText(message)
-                                .setSummaryText(number+" mensajes nuevo"))
-                        .setGroup(GROUP_NOTIFICATIONS)
-                        .setGroupSummary(true);
-
-        mBuilder.setContentIntent(pendingIntent);
-        mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
-
-        //showToast();
-
-        Log.i("GCM", "Received: ("+messageType+") "+extras.getString("message")+" - "+extras.getString("messageId"));
-
         //GEOLOCATION ACTIONS
         double latitude = gps.getLatitude();
         double longitude = gps.getLongitude();
 
         Log.i("POSITION","Latitude: "+latitude+" - Longitude: "+longitude);
 
-        //SEND DATA TO SERVER ABOUT DE USER LOCATION
-        storeUserLocationWhenReceiveMessage(extras.getString("messageId"), latitude, longitude);
+        isGeolocation = extras.getString("geolocation");
+        messageId = extras.getString("messageId");
+        message = extras.getString("message");
+        title = "Notificación Entuizer";
+        alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
+        if(isGeolocation.equalsIgnoreCase("y")){
+            //GET CURRENT POSITION OF THE USER AND UPDATE DATABASE
+            updateUserLocation(latitude, longitude);
+
+            Log.i("GCM", "Received: ("+messageType+") "+extras.getString("message")+" - "+extras.getString("messageId")+" - "+isGeolocation);
+        }else{
+            Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
+            notificationIntent.putExtra("mensaje", message);
+            notificationIntent.putExtra("titulo", title);
+            notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+            mNotificationManager = (NotificationManager)this
+                    .getSystemService(Context.NOTIFICATION_SERVICE);
+            PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0,
+                    notificationIntent, PendingIntent.FLAG_ONE_SHOT);
+
+            Bitmap largeIcon = new BitmapFactory().decodeResource(getResources(), R.drawable.bullet_notifi);
+
+            NotificationCompat.Builder mBuilder =
+                    new NotificationCompat.Builder(getApplicationContext())
+                            .setSmallIcon(R.drawable.bullet_notifi)
+                            .setLargeIcon(largeIcon)
+                            .setContentTitle(title)
+                            .setContentText(message)
+                            .setAutoCancel(true)
+                            .setSound(alarmSound)
+                            .setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000 })
+                            .setStyle(new NotificationCompat.BigTextStyle()
+                                    .bigText(message)
+                                    .setSummaryText(number+" mensajes nuevo"))
+                            .setGroup(GROUP_NOTIFICATIONS)
+                            .setGroupSummary(true);
+
+            mBuilder.setContentIntent(pendingIntent);
+            mNotificationManager.notify(NOTIFICATION_ID, mBuilder.build());
+
+            //showToast();
+
+            Log.i("GCM", "Received: (" + messageType + ") " + extras.getString("message") + " - " + extras.getString("messageId") + " - " + isGeolocation);
+
+            //SEND DATA TO SERVER ABOUT DE USER LOCATION
+            storeUserLocationWhenReceiveMessage(extras.getString("messageId"), latitude, longitude);
+        }
 
         gps.stopUsingGPS();
 
@@ -189,6 +198,7 @@ public class GcmMessageHandler extends IntentService {
         GcmBroadcastReceiver.completeWakefulIntent(intent);
     }
 
+    //SET THE USER LOCATION WHEN RECEIVE SPECIFIC MESSAGE
     public void storeUserLocationWhenReceiveMessage(final String messageId, final double latitude, final double longitude){
 
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -223,6 +233,50 @@ public class GcmMessageHandler extends IntentService {
                 params.put("latitude", ""+latitude);
                 params.put("longitude", ""+longitude);
                 params.put("messageId", messageId);
+                params.put("userId", ""+userId);
+
+                return params;
+            }
+
+        };
+
+        queue.add(putRequest);
+
+    }
+
+    public void updateUserLocation(final double latitude, final double longitude){
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        String url = "http://www.entuizer.tech/administrators/pri/webServices/updateUserGeolocation.php";
+        StringRequest putRequest = new StringRequest(Request.Method.POST, url,
+                new Response.Listener<String>()
+                {
+
+                    public void onResponse(String response) {
+                        // response
+                        Log.d("Response", response);
+                    }
+                },
+                new Response.ErrorListener()
+                {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // error
+                        Log.d("Error.Response", error.toString());
+                    }
+                }
+        ) {
+
+            @Override
+            protected Map<String, String> getParams()
+            {
+                Map<String, String>  params = new HashMap<String, String>();
+
+                int userId = UserData.getUserId(getApplicationContext());
+                Log.d("VALORES", "USERID: " + userId);
+
+                params.put("userLatitude", ""+latitude);
+                params.put("userLongitude", ""+longitude);
                 params.put("userId", ""+userId);
 
                 return params;

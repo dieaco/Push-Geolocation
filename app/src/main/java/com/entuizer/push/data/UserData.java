@@ -16,6 +16,14 @@ public class UserData {
         return preferences.getBoolean("IS_LOGGED", false);
     }
 
+    //Consultar una preferencia
+    public static boolean isLocationServiceRunning(Context context){
+        SharedPreferences preferences =
+                context.getSharedPreferences("USER_DATA", Context.MODE_PRIVATE);
+
+        return preferences.getBoolean("IS_LOCATION_SERVICE_ACTIVE", false);
+    }
+
     public static int getUserId(Context context){
         SharedPreferences preferences =
                 context.getSharedPreferences("USER_DATA", Context.MODE_PRIVATE);
@@ -71,6 +79,16 @@ public class UserData {
 
         SharedPreferences.Editor edit = preferences.edit();
         edit.putString("REG_ID", regId);
+        edit.commit();
+    }
+
+    //escribir una preferencia
+    public static void setUpLocationService(Context context, boolean isRunning){
+        SharedPreferences preferences =
+                context.getSharedPreferences("USER_DATA", Context.MODE_PRIVATE);
+
+        SharedPreferences.Editor edit = preferences.edit();
+        edit.putBoolean("IS_LOCATION_SERVICE_ACTIVE", isRunning);
         edit.commit();
     }
 
